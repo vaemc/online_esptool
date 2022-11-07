@@ -1,8 +1,19 @@
 <template>
   <div>
-    <v-file-input v-model="file" label="选择固件"></v-file-input>
-    <v-text-field v-model="firmware.name" label="名称" filled></v-text-field>
-    <v-text-field v-model="firmware.board" label="板子" filled></v-text-field>
+    <v-snackbar v-model="snackbar">
+      {{ snackbarText }}
+
+      <template v-slot:action="{ attrs }">
+        <v-btn color="pink" text v-bind="attrs" @click="snackbar = false">
+          关闭
+        </v-btn>
+      </template>
+    </v-snackbar>
+
+    <v-file-input filled v-model="file" label="选择固件"></v-file-input>
+    <!-- <v-select :items="boardList" v-model="firmware.board" label="板子类型" filled></v-select> -->
+    <v-select filled :items="boardList" v-model="firmware.board" label="板子类型"></v-select>
+
     <v-text-field
       v-model="firmware.description"
       label="描述"
@@ -114,6 +125,8 @@
   </div>
 </template>
 <script>
+import moment from "moment";
+
 function uuidv4() {
   return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
     (
@@ -125,10 +138,14 @@ function uuidv4() {
 
 export default {
   data: () => ({
+    boardList: ["ESP8266", "ESP32"],
+    snackbarText: "",
+    snackbar: false,
     file: null,
     firmware: {
       filename: "",
-      board: "",
+      alias: "",
+      board: "ESP32",
       cmd: "",
       description: "",
       time: "",
@@ -187,20 +204,44 @@ export default {
 
   methods: {
     ok() {
-      uuid = uuidv4();
-      var formData = new FormData();
-      formData.append("file", this.file);
-      formData.append("filename", uuid);
-      console.info(this.file);
+      if (this.file == null) {
+        this.snackbar = true;
+        this.snackbarText = "请选择文件";
+        return;
+      }
+      if (this.firmware.board == "") {
+        this.snackbar = true;
+        this.snackbarText = "请选择板子类型";
+        return;
+      }
+      if (this.firmware.description == "") {
+        this.snackbar = true;
+        this.snackbarText = "请输入描述";
+        return;
+      }
+      if (this.firmware.cmd == "") {
+        this.snackbar = true;
+        this.snackbarText = "请输入烧入命令";
+        return;
+      }
 
+      let uuid = uuidv4() + "." + this.file.name.split(".").pop();
+      let formData = new FormData();
+      formData.append("file", this.file);
+      formData.append("alias", uuid);
+      console.info(this.file.name);
+      this.firmware.alias = uuid;
+      this.firmware.filename = this.file.name;
+      this.firmware.time = moment().format("YYYY-MM-DD HH:mm:ss");
       this.axios.post("firmware/file/save", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-      // this.axios.post("firmware/save", this.firmware).then((res) => {
-      //   console.info(res.data);
-      // });
+
+      this.axios.post("firmware/save", this.firmware).then((res) => {
+        console.info(res.data);
+      });
     },
     initialize() {
       this.desserts = [

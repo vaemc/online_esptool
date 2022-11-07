@@ -1,11 +1,12 @@
 <template>
   <div>
     <v-select
+      filled
       @click="portListRefresh"
       :items="portList"
       label="端口"
     ></v-select>
-    <v-select :items="binList" label="固件"></v-select>
+    <v-select filled :items="binList" label="固件"></v-select>
     <v-btn block @click="ok" depressed color="primary">上传</v-btn>
 
     <div style="margin-top: 10px" v-html="info"></div>

@@ -20,7 +20,7 @@ cors = CORS(app)
 class Firmware(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(100))
-    file = db.Column(db.String(100))
+    alias = db.Column(db.String(100))
     board = db.Column(db.String(100))
     cmd = db.Column(db.String(200))
     description = db.Column(db.String(200))
@@ -37,7 +37,7 @@ class Firmware(db.Model):
 @app.route('/firmware/save', methods=['POST'])
 @cross_origin()
 def firmware_save():
-    firmware = Firmware(filename=request.json["filename"], file=request.json["file"], board=request.json["board"],
+    firmware = Firmware(filename=request.json["filename"], alias=request.json["alias"], board=request.json["board"],
                         cmd=request.json["cmd"], description=request.json["description"], time=request.json["time"])
     db.session.add(firmware)
     db.session.commit()
@@ -47,8 +47,8 @@ def firmware_save():
 @app.route('/firmware/file/save', methods=['POST'])
 def upload_file_save():
     file = request.files["file"]
-    filename = request.form["filename"]
-    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    alias = request.form["alias"]
+    file.save(os.path.join(app.config['UPLOAD_FOLDER'], alias))
     return "ok"
 
 # @app.route('/firmware/query')
