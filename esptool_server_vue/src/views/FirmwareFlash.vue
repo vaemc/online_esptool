@@ -35,7 +35,7 @@ export default {
       });
     },
     ok() {
-      const wsuri = "ws://192.168.5.190:8081/";
+      const wsuri = "ws://192.168.43.198:8081/";
       this.websock = new WebSocket(wsuri);
       this.websock.onmessage = this.websocketonmessage;
 
