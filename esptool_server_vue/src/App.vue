@@ -36,6 +36,16 @@
             <v-list-item-title>固件管理</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
+
+        <v-list-item @click="toTools" link>
+          <v-list-item-icon>
+            <v-icon>mdi-console</v-icon>
+          </v-list-item-icon>
+
+          <v-list-item-content>
+            <v-list-item-title>常用功能</v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
         <!-- <v-list-item @click="toSerialMonitor" link>
           <v-list-item-icon>
             <v-icon>mdi-connection</v-icon>
@@ -86,6 +96,10 @@ export default {
       this.$router.push("/SerialMonitor");
       this.drawer = false;
     },
+    toTools(){
+      this.$router.push("/Tools");
+      this.drawer = false;
+    }
   },
 };
 </script>

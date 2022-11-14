@@ -4,6 +4,7 @@ import Home from '../views/Home.vue'
 import FirmwareFlash from '../views/FirmwareFlash.vue'
 import FirmwareManage from '../views/FirmwareManage.vue'
 import SerialMonitor from '../views/SerialMonitor.vue'
+import Tools from '../views/Tools.vue'
 Vue.use(VueRouter)
 
 const routes = [
@@ -26,6 +27,11 @@ const routes = [
     path: '/SerialMonitor',
     name: 'SerialMonitor',
     component: SerialMonitor
+  },
+  {
+    path: '/Tools',
+    name: 'Tools',
+    component: Tools
   }
 ]
 
