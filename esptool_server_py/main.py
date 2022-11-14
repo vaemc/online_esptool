@@ -1,5 +1,6 @@
 import json
 from json import JSONEncoder
+
 from flask import Flask, render_template, request, jsonify, flash
 from flask_cors import CORS, cross_origin
 from flask_sqlalchemy import SQLAlchemy
@@ -7,6 +8,9 @@ from werkzeug.utils import secure_filename
 import serial.tools.list_ports
 import subprocess
 import os
+import asyncio
+from websockets import serve
+
 ports = serial.tools.list_ports.comports()
 app = Flask(__name__, template_folder='./')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
@@ -51,6 +55,7 @@ def upload_file_save():
     file.save(os.path.join(app.config['UPLOAD_FOLDER'], alias))
     return "ok"
 
+
 # @app.route('/firmware/query')
 # @cross_origin()
 # def firmware_query():
@@ -84,10 +89,23 @@ def port_list():
 @app.route('/execute_cmd')
 @cross_origin()
 def execute_cmd():
-    #os.system("./websocketd --port=8081 cat /dev/ttyS3")
+    # os.system("./websocketd --port=8081 cat /dev/ttyS3")
     # os.popen("./websocketd --port=8081 cat /dev/ttyS3").read()
     return_code = subprocess.call(
         "./websocketd --port=8081 cat /dev/ttyS3", shell=True)
+
+    return "aa"
+
+
+@app.route('/monitor')
+@cross_origin()
+def monitor():
+    # with serial.Serial('COM5', 115200, timeout=1) as ser:
+    #
+    #     while 1:
+    #
+    #         line = ser.readline().decode()
+    #         print(line)
 
     return "aa"
 
@@ -99,7 +117,6 @@ def index():
 
 if __name__ == '__main__':
     app.run()
-
 
 with app.app_context():
     db.create_all()
