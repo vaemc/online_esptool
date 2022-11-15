@@ -15,7 +15,9 @@
     <v-select filled :items="boardList" v-model="firmware.board" label="板子类型"></v-select>
 
     <v-text-field v-model="firmware.description" label="描述" filled></v-text-field>
-    <v-text-field v-model="firmware.cmd" v label="烧录命令" filled></v-text-field>
+    <v-textarea filled label="烧录命令" v-model="firmware.cmd"
+      hint="注意：请将命令中的端口换成  ${PORT}  Bin文件路径换成  ${BIN}  ，并省略esptool.exe前缀">
+    </v-textarea>
     <v-btn block @click="ok" depressed color="primary">添加</v-btn>
 
     <v-data-table style="margin-top: 10px" :headers="headers" :items="firmwareList" sort-by="calories"
@@ -105,7 +107,7 @@ function uuidv4() {
 
 export default {
   data: () => ({
-    boardList: ["ESP8266", "ESP32"],
+    boardList: ["ESP8266", "ESP8285", "ESP32", "ESP32-C2", "ESP32-C3", "ESP32-S2", "ESP32-S3"],
     snackbarText: "",
     snackbar: false,
     file: null,

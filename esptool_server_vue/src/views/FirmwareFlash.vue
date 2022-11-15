@@ -1,12 +1,9 @@
 <template>
   <div>
-    <v-select
-      filled
-      @click="portListRefresh"
-      :items="portList"
-      label="端口"
-    ></v-select>
-    <v-select filled :items="binList" label="固件"></v-select>
+
+    
+    <v-select filled @click="portListRefresh" :items="portList" label="端口"></v-select>
+    <v-select filled :items="firmwareList" label="固件"></v-select>
     <v-btn block @click="ok" depressed color="primary">上传</v-btn>
 
     <div style="margin-top: 10px" v-html="info"></div>
@@ -19,7 +16,7 @@ export default {
   data() {
     return {
       portList: [],
-      binList: [],
+      firmwareList: [],
       info: "",
     };
   },
@@ -27,6 +24,9 @@ export default {
     this.axios.get("port_list").then((res) => {
       this.portList = res.data;
     });
+    this.axios.get("firmware/query").then(res => {
+      this.firmwareList = res.data;
+    })
   },
   methods: {
     portListRefresh() {
