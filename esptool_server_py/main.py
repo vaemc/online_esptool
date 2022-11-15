@@ -39,8 +39,8 @@ async def root():
 
 @app.get("/firmware/query")
 def firmware_query(db: Session = Depends(get_db)):
-    users = db.query(models.Firmware).all()
-    return users
+    firmware_list = db.query(models.Firmware).all()
+    return firmware_list
 
 
 @app.post("/firmware/save")
@@ -51,6 +51,15 @@ def firmware_save(firmware: schema.Firmware, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_firmware)
     return db_firmware
+
+
+@app.delete("/firmware/delete/{id}")
+def firmware_query(id: int, db: Session = Depends(get_db)):
+    firmware = db.query(models.Firmware).filter(models.Firmware.id == id).first()
+    db.delete(firmware)
+    db.commit()
+    os.remove("./upload_file/" + firmware.alias)
+    return "ok"
 
 
 @app.post("/upload/file")
@@ -67,9 +76,8 @@ async def upload_file(file: UploadFile, alias: str = Form()):
     return {"message": f"Successfully uploaded {alias}"}
 
 
-
 @app.get("/")
-async def say_hello():
+def hello():
     return "hello"
 
 
