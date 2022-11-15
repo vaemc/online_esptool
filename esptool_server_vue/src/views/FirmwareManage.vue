@@ -233,12 +233,11 @@ export default {
       this.firmware.alias = uuid;
       this.firmware.filename = this.file.name;
       this.firmware.time = moment().format("YYYY-MM-DD HH:mm:ss");
-      this.axios.post("firmware/file/save", formData, {
+      this.axios.post("/upload/file", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-
       this.axios.post("firmware/save", this.firmware).then((res) => {
         console.info(res.data);
       });

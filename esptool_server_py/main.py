@@ -1,80 +1,81 @@
-import json
-from json import JSONEncoder
+from fastapi import Depends, FastAPI, HTTPException, File, Form, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 
-from flask import Flask, render_template, request, jsonify, flash
-from flask_cors import CORS, cross_origin
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.utils import secure_filename
-import serial.tools.list_ports
-import subprocess
+from sqlalchemy.orm import Session
+import models
+import schema
 import os
-import asyncio
-from websockets import serve
+from database import SessionLocal, engine
 
-ports = serial.tools.list_ports.comports()
-app = Flask(__name__, template_folder='./')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
-app.config['UPLOAD_FOLDER'] = "./firmware"
+import serial.tools.list_ports
 
-db = SQLAlchemy(app)
-db.init_app(app)
-cors = CORS(app)
+app = FastAPI()
+origins = [
+    "http://localhost:8080",
+]
 
-
-class Firmware(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.String(100))
-    alias = db.Column(db.String(100))
-    board = db.Column(db.String(100))
-    cmd = db.Column(db.String(200))
-    description = db.Column(db.String(200))
-    time = db.Column(db.String(100))
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+models.Base.metadata.create_all(bind=engine)
 
 
-# @app.route('/firmware/file', methods=['POST'])
-# @cross_origin()
-# def firmware_file():
-
-#     return "asd"
-
-
-@app.route('/firmware/save', methods=['POST'])
-@cross_origin()
-def firmware_save():
-    firmware = Firmware(filename=request.json["filename"], alias=request.json["alias"], board=request.json["board"],
-                        cmd=request.json["cmd"], description=request.json["description"], time=request.json["time"])
-    db.session.add(firmware)
-    db.session.commit()
-    return "asd"
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
-@app.route('/firmware/file/save', methods=['POST'])
-def upload_file_save():
-    file = request.files["file"]
-    alias = request.form["alias"]
-    file.save(os.path.join(app.config['UPLOAD_FOLDER'], alias))
-    return "ok"
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}
 
 
-# @app.route('/firmware/query')
-# @cross_origin()
-# def firmware_query():
-
-# @app.route('/firmware/update')
-# @cross_origin()
-# def firmware_update():
+@app.get("/firmware/query")
+def firmware_query(db: Session = Depends(get_db)):
+    users = db.query(models.Firmware).all()
+    return users
 
 
-@app.route('/firmware/delete')
-@cross_origin()
-def firmware_query():
-    firmware_list = Firmware.query.all()
-    return jsonify(firmware_list)
+@app.post("/firmware/save")
+def firmware_save(firmware: schema.Firmware, db: Session = Depends(get_db)):
+    db_firmware = models.Firmware(filename=firmware.filename, alias=firmware.alias, board=firmware.board,
+                                  cmd=firmware.cmd, description=firmware.description, time=firmware.time)
+    db.add(db_firmware)
+    db.commit()
+    db.refresh(db_firmware)
+    return db_firmware
 
 
-@app.route('/port_list')
-@cross_origin()
+@app.post("/upload/file")
+async def upload_file(file: UploadFile, alias: str = Form()):
+    print(alias)
+    try:
+        contents = file.file.read()
+        with open("./upload_file/" + alias, 'wb') as f:
+            f.write(contents)
+    except Exception:
+        return {"message": "There was an error uploading the file"}
+    finally:
+        file.file.close()
+    return {"message": f"Successfully uploaded {alias}"}
+
+
+
+@app.get("/")
+async def say_hello():
+    return "hello"
+
+
+@app.get('/port_list')
 def port_list():
+    ports = serial.tools.list_ports.comports()
     serial_ports = []
     for port, desc, hwid in sorted(ports):
         try:
@@ -83,40 +84,4 @@ def port_list():
             serial_ports.append(port)
         except (OSError, serial.SerialException):
             pass
-    return jsonify(serial_ports)
-
-
-@app.route('/execute_cmd')
-@cross_origin()
-def execute_cmd():
-    # os.system("./websocketd --port=8081 cat /dev/ttyS3")
-    # os.popen("./websocketd --port=8081 cat /dev/ttyS3").read()
-    return_code = subprocess.call(
-        "./websocketd --port=8081 cat /dev/ttyS3", shell=True)
-
-    return "aa"
-
-
-@app.route('/monitor')
-@cross_origin()
-def monitor():
-    # with serial.Serial('COM5', 115200, timeout=1) as ser:
-    #
-    #     while 1:
-    #
-    #         line = ser.readline().decode()
-    #         print(line)
-
-    return "aa"
-
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-
-if __name__ == '__main__':
-    app.run()
-
-with app.app_context():
-    db.create_all()
+    return serial_ports
