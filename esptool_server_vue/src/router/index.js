@@ -14,11 +14,6 @@ const routes = [
     component: Home
   },
   {
-    path: '/FirmwareFlash',
-    name: 'FirmwareFlash',
-    component: FirmwareFlash
-  },
-  {
     path: '/FirmwareManage',
     name: 'FirmwareManage',
     component: FirmwareManage

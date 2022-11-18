@@ -5,7 +5,7 @@
       <v-icon>mdi-wifi-strength-4</v-icon>
       <v-icon>mdi-signal-cellular-outline</v-icon>
       <v-icon>mdi-battery</v-icon>
-      <span>12:30</span>
+      <span>{{ time }}</span>
     </v-system-bar>
     <v-navigation-drawer v-model="drawer" app>
       <v-list dense>
@@ -18,18 +18,10 @@
             <v-list-item-title>首页</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
-        <v-list-item @click="toFirmwareFlash" link>
-          <v-list-item-icon>
-            <v-icon>mdi-database-arrow-right</v-icon>
-          </v-list-item-icon>
-
-          <v-list-item-content>
-            <v-list-item-title>烧录固件 </v-list-item-title>
-          </v-list-item-content>
-        </v-list-item>
+     
         <v-list-item @click="toFirmwareManage" link>
           <v-list-item-icon>
-            <v-icon>mdi-database-edit</v-icon>
+            <v-icon>mdi-view-grid-plus </v-icon>
           </v-list-item-icon>
 
           <v-list-item-content>
@@ -73,13 +65,21 @@
 </template>
 
 <script>
+import moment from 'moment';
 export default {
   data() {
     return {
       drawer: null,
+      time: "",
     };
   },
+  created() {
+    setInterval(() => {
+      this.time = moment().format('YYYY-MM-DD HH:mm:ss');
+    }, 1000)
+  },
   methods: {
+
     toHome() {
       this.$router.push("/");
       this.drawer = false;
@@ -96,7 +96,7 @@ export default {
       this.$router.push("/SerialMonitor");
       this.drawer = false;
     },
-    toTools(){
+    toTools() {
       this.$router.push("/Tools");
       this.drawer = false;
     }
