@@ -1,18 +1,20 @@
-from fastapi import Depends, FastAPI, HTTPException, File, Form, UploadFile
+from fastapi import Depends, FastAPI, HTTPException, File, Form, UploadFile, requests
 from fastapi.middleware.cors import CORSMiddleware
-
 from sqlalchemy.orm import Session
 import models
 import schema
 import os
 from database import SessionLocal, engine
-
+import platform
+import pathlib
 import serial.tools.list_ports
 
 app = FastAPI()
 origins = [
     "http://localhost:8080",
 ]
+
+firmware_path = "upload_file/"
 
 app.add_middleware(
     CORSMiddleware,
@@ -62,12 +64,32 @@ def firmware_query(id: int, db: Session = Depends(get_db)):
     return "ok"
 
 
+@app.post("/firmware/flash/{port}")
+def firmware_flash(firmware: schema.Firmware, port: str):
+    cmd = firmware.cmd.replace("${port}", port).replace("${bin}", firmware_path + firmware.alias).replace("${PORT}",
+                                                                                                          port).replace(
+        "${BIN}", firmware_path + firmware.alias)
+    base_path = str(pathlib.Path(__file__).parent.resolve())
+    if platform.system().lower() == 'windows':
+        print("windows")
+        fillCmd = "{path}\\tools\\websocketd.exe --port=8083 {path}\\tools\\esptool.exe write_flash 0x0 {path}\\tools\\ESP32S3_WIFI_SCAN.bin".format(
+            path=base_path)
+        print(fillCmd)
+        # print(os.popen(fillCmd).read())
+    if platform.system().lower() == 'linux':
+        print("linux")
+        fillCmd = "{path}\\tools\\websocketd.exe --port=8083 {path}\\tools\\esptool.exe write_flash 0x0 {path}\\tools\\ESP32S3_WIFI_SCAN.bin".format(
+            path=base_path)
+        print(fillCmd)
+    return "ok"
+
+
 @app.post("/upload/file")
 async def upload_file(file: UploadFile, alias: str = Form()):
     print(alias)
     try:
         contents = file.file.read()
-        with open("./upload_file/" + alias, 'wb') as f:
+        with open(firmware_path + alias, 'wb') as f:
             f.write(contents)
     except Exception:
         return {"message": "There was an error uploading the file"}

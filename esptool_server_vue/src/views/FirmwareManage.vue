@@ -21,7 +21,7 @@
     <v-textarea filled label="烧录命令" v-model="firmware.cmd"
       hint="注意：请将命令中的端口换成  ${PORT}  Bin文件路径换成  ${BIN}  ，并省略esptool.exe前缀">
     </v-textarea>
-    <v-btn block @click="ok" depressed color="primary">添加</v-btn>
+    <v-btn block @click="addBtn" depressed color="primary">添加</v-btn>
 
     <v-data-table style="margin-top: 10px" :headers="headers" :items="firmwareList" sort-by="calories"
       class="elevation-1">
@@ -30,48 +30,7 @@
           <v-toolbar-title>固件列表</v-toolbar-title>
           <v-divider class="mx-4" inset vertical></v-divider>
           <v-spacer></v-spacer>
-          <v-dialog v-model="dialog" max-width="500px">
-            <!-- <template v-slot:activator="{ on, attrs }">
-              <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on">
-                New Item
-              </v-btn>
-            </template> -->
-            <v-card>
-              <v-card-title>
-                <span class="text-h5">{{ formTitle }}</span>
-              </v-card-title>
 
-              <v-card-text>
-                <v-container>
-                  <v-row>
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field v-model="editedItem.name" label="Dessert name"></v-text-field>
-                    </v-col>
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field v-model="editedItem.calories" label="Calories"></v-text-field>
-                    </v-col>
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field v-model="editedItem.fat" label="Fat (g)"></v-text-field>
-                    </v-col>
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field v-model="editedItem.carbs" label="Carbs (g)"></v-text-field>
-                    </v-col>
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field v-model="editedItem.protein" label="Protein (g)"></v-text-field>
-                    </v-col>
-                  </v-row>
-                </v-container>
-              </v-card-text>
-
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn color="blue darken-1" text @click="close">
-                  Cancel
-                </v-btn>
-                <v-btn color="blue darken-1" text @click="save"> Save </v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
           <v-dialog v-model="dialogDelete" max-width="500px">
             <v-card>
               <v-card-title class="text-h5">确定删除&nbsp<span style="color:red">{{ editedItem.filename }}</span>&nbsp吗
@@ -132,9 +91,9 @@
             </v-list-item>
           </v-list>
           <div style="margin: 5px">
-            <v-select filled @click="portListRefresh" :items="portList" label="端口"></v-select>
-           
-            <v-btn block @click="ok" depressed color="primary">上传</v-btn>
+            <v-select filled @click="portListRefresh" @change="portChange" :items="portList" label="端口"></v-select>
+
+            <v-btn block @click="flashBtn" depressed color="primary">烧录</v-btn>
 
             <div style="margin-top: 10px" v-html="info"></div>
 
@@ -158,6 +117,8 @@ function uuidv4() {
 
 export default {
   data: () => ({
+    selectPort: "",
+    info: "",
     portList: [],
     selectItem: "",
     flashDialog: false,
@@ -231,7 +192,21 @@ export default {
     })
   },
   methods: {
-    ok() {
+    portChange(item) {
+      this.selectPort = item;
+    },
+    flashBtn() {
+      if (this.selectPort == "") {
+        this.snackbar = true;
+        this.snackbarText = "请选择端口";
+        return;
+      }
+
+      this.axios.post("firmware/flash/" + this.selectPort, this.selectItem).then(res => {
+        console.info(res.data);
+      })
+    },
+    addBtn() {
       if (this.file == null) {
         this.snackbar = true;
         this.snackbarText = "请选择文件";
@@ -267,10 +242,13 @@ export default {
         },
       });
       this.axios.post("firmware/save", this.firmware).then((res) => {
-        //console.info(res.data);
         this.snackbar = true;
         this.snackbarText = "添加成功";
+
+        this.firmwareList.push(res.data);
       });
+
+
     },
     portListRefresh() {
       this.axios.get("port_list").then((res) => {
@@ -285,6 +263,9 @@ export default {
     flashItem(item) {
       this.flashDialog = true;
       this.selectItem = item;
+
+
+
     },
     deleteItem(item) {
       this.editedIndex = this.firmwareList.indexOf(item);

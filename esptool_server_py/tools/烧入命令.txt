@@ -2,3 +2,5 @@ esptool.exe -p COM3 -b 460800 --before default_reset --after hard_reset --chip e
 
 
 websocketd --port=8080 esptool.exe -p COM3 -b 460800 --before default_reset --after hard_reset --chip esp32 write_flash --flash_mode dio --flash_freq 40m --flash_size detect 0x1000 bootloader.bin 0x10000 cozylife_test.bin 0x8000 partition-table.bin
+
+esptool.exe write_flash 0x0 ESP32S3_WIFI_SCAN.bin
