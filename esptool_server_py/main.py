@@ -1,3 +1,5 @@
+import esptool
+from esptool import ESPLoader
 from fastapi import Depends, FastAPI, HTTPException, File, Form, UploadFile, requests
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -11,6 +13,8 @@ import serial.tools.list_ports
 from subprocess import Popen, PIPE
 import asyncio
 from websockets import serve
+from argparse import Namespace
+import esptool
 
 app = FastAPI()
 origins = [
@@ -66,7 +70,8 @@ def firmware_query(id: int, db: Session = Depends(get_db)):
     os.remove("./upload_file/" + firmware.alias)
     return "ok"
 
-def run_generator(command):
+
+def run_cmd(command):
     process = Popen(command, stdout=PIPE, shell=True)
     while True:
         line = process.stdout.readline().rstrip()
@@ -102,12 +107,19 @@ def firmware_flash(firmware: schema.Firmware, port: str):
     #     fillCmd = "{path}\\tools\\websocketd.exe --port=8083 {path}\\tools\\esptool.exe write_flash 0x0 {path}\\tools\\ESP32S3_WIFI_SCAN.bin".format(
     #         path=base_path)
     #     print(fillCmd)
-    asyncio.run(run_websocket_server(6567))
-    # base_path = str(pathlib.Path(__file__).parent.resolve())
+    # asyncio.run(run_websocket_server(6567))
+    #  base_path = str(pathlib.Path(__file__).parent.resolve())
     # fillCmd = "{path}\\tools\\esptool.exe write_flash 0x0 {path}\\tools\\ESP32S3_WIFI_SCAN.bin".format(path=base_path)
     # print(fillCmd)
     # for result in run_generator(fillCmd):
     #     print(result)
+    initial_baud = min(ESPLoader.ESP_ROM_BAUD, 115200)
+    esp = esptool.detect_chip("COM5", initial_baud)
+    esp = esp.run_stub()
+    args = Namespace()
+    args.force = "esp32-s3"
+    esptool.erase_flash(esp, args)
+    print(esptool.read_mac(esp, args))
     return "ok"
 
 
