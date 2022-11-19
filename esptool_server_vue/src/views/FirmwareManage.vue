@@ -18,8 +18,23 @@
     <v-select filled :items="boardList" v-model="firmware.board" label="板子类型"></v-select>
 
     <v-text-field v-model="firmware.description" label="描述" filled></v-text-field>
+
     <v-textarea filled label="烧录命令" v-model="firmware.cmd"
       hint="注意：请将命令中的端口换成  ${PORT}  Bin文件路径换成  ${BIN}  ，并省略esptool.exe前缀">
+
+      <template v-slot:append-outer>
+        <div>
+          <v-btn text @click="firmware.cmd += 'write_flash 0x0 ${BIN}'" color="primary">
+            默认命令
+          </v-btn>
+          <v-btn text @click="firmware.cmd += '${PORT}'" color="primary">
+            ${PORT}
+          </v-btn>
+          <v-btn text @click="firmware.cmd += '${BIN}'" color="primary">
+            ${BIN}
+          </v-btn>
+        </div>
+      </template>
     </v-textarea>
     <v-btn block @click="addBtn" depressed color="primary">添加</v-btn>
 
@@ -117,6 +132,7 @@ function uuidv4() {
 
 export default {
   data: () => ({
+    defaultCmd: "esptool.exe write_flash 0x0 ${BIN}",
     selectPort: "",
     info: "",
     portList: [],

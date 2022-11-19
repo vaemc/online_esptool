@@ -8,6 +8,9 @@ from database import SessionLocal, engine
 import platform
 import pathlib
 import serial.tools.list_ports
+from subprocess import Popen, PIPE
+import asyncio
+from websockets import serve
 
 app = FastAPI()
 origins = [
@@ -63,24 +66,48 @@ def firmware_query(id: int, db: Session = Depends(get_db)):
     os.remove("./upload_file/" + firmware.alias)
     return "ok"
 
+def run_generator(command):
+    process = Popen(command, stdout=PIPE, shell=True)
+    while True:
+        line = process.stdout.readline().rstrip()
+        if not line:
+            break
+        yield line
+
+
+async def echo(websocket):
+    async for message in websocket:
+        await websocket.send(message)
+
+
+async def run_websocket_server(ws_port):
+    async with serve(echo, "localhost", ws_port):
+        await asyncio.Future()
+
 
 @app.post("/firmware/flash/{port}")
 def firmware_flash(firmware: schema.Firmware, port: str):
-    cmd = firmware.cmd.replace("${port}", port).replace("${bin}", firmware_path + firmware.alias).replace("${PORT}",
-                                                                                                          port).replace(
-        "${BIN}", firmware_path + firmware.alias)
-    base_path = str(pathlib.Path(__file__).parent.resolve())
-    if platform.system().lower() == 'windows':
-        print("windows")
-        fillCmd = "{path}\\tools\\websocketd.exe --port=8083 {path}\\tools\\esptool.exe write_flash 0x0 {path}\\tools\\ESP32S3_WIFI_SCAN.bin".format(
-            path=base_path)
-        print(fillCmd)
-        # print(os.popen(fillCmd).read())
-    if platform.system().lower() == 'linux':
-        print("linux")
-        fillCmd = "{path}\\tools\\websocketd.exe --port=8083 {path}\\tools\\esptool.exe write_flash 0x0 {path}\\tools\\ESP32S3_WIFI_SCAN.bin".format(
-            path=base_path)
-        print(fillCmd)
+    # cmd = firmware.cmd.replace("${port}", port).replace("${bin}", firmware_path + firmware.alias).replace("${PORT}",
+    #                                                                                                       port).replace(
+    #     "${BIN}", firmware_path + firmware.alias)
+    # base_path = str(pathlib.Path(__file__).parent.resolve())
+    # if platform.system().lower() == 'windows':
+    #     print("windows")
+    #     fillCmd = "{path}\\tools\\websocketd.exe --port=8083 {path}\\tools\\esptool.exe write_flash 0x0 {path}\\tools\\ESP32S3_WIFI_SCAN.bin".format(
+    #         path=base_path)
+    #     print(fillCmd)
+    #     # print(os.popen(fillCmd).read())
+    # if platform.system().lower() == 'linux':
+    #     print("linux")
+    #     fillCmd = "{path}\\tools\\websocketd.exe --port=8083 {path}\\tools\\esptool.exe write_flash 0x0 {path}\\tools\\ESP32S3_WIFI_SCAN.bin".format(
+    #         path=base_path)
+    #     print(fillCmd)
+    asyncio.run(run_websocket_server(6567))
+    # base_path = str(pathlib.Path(__file__).parent.resolve())
+    # fillCmd = "{path}\\tools\\esptool.exe write_flash 0x0 {path}\\tools\\ESP32S3_WIFI_SCAN.bin".format(path=base_path)
+    # print(fillCmd)
+    # for result in run_generator(fillCmd):
+    #     print(result)
     return "ok"
 
 
