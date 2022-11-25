@@ -1,5 +1,4 @@
-import esptool
-from esptool import ESPLoader
+
 from fastapi import Depends, FastAPI, HTTPException, File, Form, UploadFile, requests
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -10,11 +9,7 @@ from database import SessionLocal, engine
 import platform
 import pathlib
 import serial.tools.list_ports
-from subprocess import Popen, PIPE
-import asyncio
-from websockets import serve
-from argparse import Namespace
-import esptool
+from subprocess import Popen, PIPE, STDOUT
 
 app = FastAPI()
 origins = [
@@ -80,32 +75,34 @@ def run_cmd(command):
         yield line
 
 
-async def echo(websocket):
-    async for message in websocket:
-        await websocket.send(message)
-
-
-async def run_websocket_server(ws_port):
-    async with serve(echo, "localhost", ws_port):
-        await asyncio.Future()
+def exe_command(command):
+    print(command)
+    process = Popen(command, stdout=PIPE, stderr=STDOUT, shell=True)
+    with process.stdout:
+        for line in iter(process.stdout.readline, b''):
+            print(line.decode().strip())
+    exitcode = process.wait()
+    return process, exitcode
 
 
 @app.post("/firmware/flash/{port}")
 def firmware_flash(firmware: schema.Firmware, port: str):
     base_path = str(pathlib.Path(__file__).parent.resolve())
 
-    fillCmd = "{path}\\tools\\esptool{platform} {cmd}".format(path=base_path,
-                                                              platform='.exe' if platform.system().lower() == 'windows' else '',
-                                                              cmd=firmware.cmd).replace("${PORT}", port).replace(
+    esptool_cmd = "{path}\\tools\\esptool{platform} {cmd}".format(path=base_path,
+                                                                  platform='.exe' if platform.system().lower() == 'windows' else '',
+                                                                  cmd=firmware.cmd).replace("${PORT}", port).replace(
         "${BIN}", base_path + firmware_path + firmware.alias)
-    print(fillCmd)
-    for result in run_cmd(fillCmd):
-        print(result)
+
+    websocketd_cmd = "{path}\\tools\\websocketd{platform} --port=8081 {cmd}".format(path=base_path,
+                                                                 platform='.exe' if platform.system().lower() == 'windows' else '',
+                                                                 cmd=esptool_cmd)
+    print(websocketd_cmd)
+    print(esptool_cmd)
+
+    # exe_command(esptool_cmd)
 
     return "ok"
-
-
-
 
 
 @app.post("/upload/file")
