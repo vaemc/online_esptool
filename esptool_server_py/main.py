@@ -21,7 +21,7 @@ origins = [
     "http://localhost:8080",
 ]
 
-firmware_path = "upload_file/"
+firmware_path = "\\upload_file\\"
 
 app.add_middleware(
     CORSMiddleware,
@@ -92,35 +92,20 @@ async def run_websocket_server(ws_port):
 
 @app.post("/firmware/flash/{port}")
 def firmware_flash(firmware: schema.Firmware, port: str):
-    # cmd = firmware.cmd.replace("${port}", port).replace("${bin}", firmware_path + firmware.alias).replace("${PORT}",
-    #                                                                                                       port).replace(
-    #     "${BIN}", firmware_path + firmware.alias)
-    # base_path = str(pathlib.Path(__file__).parent.resolve())
-    # if platform.system().lower() == 'windows':
-    #     print("windows")
-    #     fillCmd = "{path}\\tools\\websocketd.exe --port=8083 {path}\\tools\\esptool.exe write_flash 0x0 {path}\\tools\\ESP32S3_WIFI_SCAN.bin".format(
-    #         path=base_path)
-    #     print(fillCmd)
-    #     # print(os.popen(fillCmd).read())
-    # if platform.system().lower() == 'linux':
-    #     print("linux")
-    #     fillCmd = "{path}\\tools\\websocketd.exe --port=8083 {path}\\tools\\esptool.exe write_flash 0x0 {path}\\tools\\ESP32S3_WIFI_SCAN.bin".format(
-    #         path=base_path)
-    #     print(fillCmd)
-    # asyncio.run(run_websocket_server(6567))
-    #  base_path = str(pathlib.Path(__file__).parent.resolve())
-    # fillCmd = "{path}\\tools\\esptool.exe write_flash 0x0 {path}\\tools\\ESP32S3_WIFI_SCAN.bin".format(path=base_path)
-    # print(fillCmd)
-    # for result in run_generator(fillCmd):
-    #     print(result)
-    initial_baud = min(ESPLoader.ESP_ROM_BAUD, 115200)
-    esp = esptool.detect_chip("COM5", initial_baud)
-    esp = esp.run_stub()
-    args = Namespace()
-    args.force = "esp32-s3"
-    esptool.erase_flash(esp, args)
-    print(esptool.read_mac(esp, args))
+    base_path = str(pathlib.Path(__file__).parent.resolve())
+
+    fillCmd = "{path}\\tools\\esptool{platform} {cmd}".format(path=base_path,
+                                                              platform='.exe' if platform.system().lower() == 'windows' else '',
+                                                              cmd=firmware.cmd).replace("${PORT}", port).replace(
+        "${BIN}", base_path + firmware_path + firmware.alias)
+    print(fillCmd)
+    for result in run_cmd(fillCmd):
+        print(result)
+
     return "ok"
+
+
+
 
 
 @app.post("/upload/file")
