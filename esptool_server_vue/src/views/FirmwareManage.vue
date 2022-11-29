@@ -217,8 +217,7 @@ export default {
         this.snackbarText = "请选择端口";
         return;
       }
-
-      this.axios.post("firmware/flash/" + this.selectPort, this.selectItem).then(res => {
+      this.axios.post("firmware/flash?port="+this.selectPort , this.selectItem).then(res => {
         console.info(res.data);
       })
     },

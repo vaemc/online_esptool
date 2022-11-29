@@ -1,3 +1,4 @@
+import subprocess
 
 from fastapi import Depends, FastAPI, HTTPException, File, Form, UploadFile, requests
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,7 +17,7 @@ origins = [
     "http://localhost:8080",
 ]
 
-firmware_path = "\\upload_file\\"
+firmware_path = "/upload_file/"
 
 app.add_middleware(
     CORSMiddleware,
@@ -85,23 +86,26 @@ def exe_command(command):
     return process, exitcode
 
 
-@app.post("/firmware/flash/{port}")
+@app.post("/firmware/flash/")
 def firmware_flash(firmware: schema.Firmware, port: str):
     base_path = str(pathlib.Path(__file__).parent.resolve())
+    #结束烧录的websocketd
+    os.popen("ps -ef |grep 'websocketd --port=8083' | awk '{print $2}' | xargs kill -9")
 
-    esptool_cmd = "{path}\\tools\\esptool{platform} {cmd}".format(path=base_path,
+    esptool_cmd = "{path}/tools/esptool{platform} {cmd}".format(path=base_path,
                                                                   platform='.exe' if platform.system().lower() == 'windows' else '',
                                                                   cmd=firmware.cmd).replace("${PORT}", port).replace(
         "${BIN}", base_path + firmware_path + firmware.alias)
 
-    websocketd_cmd = "{path}\\tools\\websocketd{platform} --port=8081 {cmd}".format(path=base_path,
+    websocketd_cmd = "nohup {path}/tools/websocketd{platform} --port=8083 {cmd} &".format(path=base_path,
                                                                  platform='.exe' if platform.system().lower() == 'windows' else '',
                                                                  cmd=esptool_cmd)
     print(websocketd_cmd)
-    print(esptool_cmd)
+    # print(esptool_cmd)
 
     # exe_command(esptool_cmd)
-
+    
+    subprocess.call(websocketd_cmd, shell=True)
     return "ok"
 
 
