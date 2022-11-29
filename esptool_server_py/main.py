@@ -104,7 +104,7 @@ def firmware_flash(firmware: schema.Firmware, port: str):
     # print(esptool_cmd)
 
     # exe_command(esptool_cmd)
-    
+
     subprocess.call(websocketd_cmd, shell=True)
     return "ok"
 
