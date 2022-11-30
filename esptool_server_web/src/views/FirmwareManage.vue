@@ -71,7 +71,6 @@
 
     <v-row justify="center">
       <v-dialog v-model="flashDialog" fullscreen hide-overlay transition="dialog-bottom-transition">
-
         <v-card>
           <v-toolbar dark color="primary">
             <v-btn icon dark @click="flashDialog = false">
@@ -109,9 +108,10 @@
             <v-select filled @click="portListRefresh" @change="portChange" :items="portList" label="端口"></v-select>
 
             <v-btn block @click="flashBtn" depressed color="primary">烧录</v-btn>
-
+            <v-btn block @click="aaaaa" depressed color="primary">esptool</v-btn>
             <div style="margin-top: 10px" v-html="info"></div>
-
+            <v-textarea id="outputInfo" outlined rows="10" 
+              v-model="outputInfo"></v-textarea>
           </div>
         </v-card>
       </v-dialog>
@@ -132,6 +132,7 @@ function uuidv4() {
 
 export default {
   data: () => ({
+    outputInfo: "",
     defaultCmd: "esptool.exe write_flash 0x0 ${BIN}",
     selectPort: "",
     info: "",
@@ -211,15 +212,42 @@ export default {
     portChange(item) {
       this.selectPort = item;
     },
+    aaaaa() {
+      const wsuri = "ws://localhost:8083";
+      this.websock = new WebSocket(wsuri);
+      this.websock.onmessage = this.websocketonmessage;
+
+
+
+    },
     flashBtn() {
       if (this.selectPort == "") {
         this.snackbar = true;
         this.snackbarText = "请选择端口";
         return;
       }
-      this.axios.post("firmware/flash?port="+this.selectPort , this.selectItem).then(res => {
+      this.axios.post("firmware/flash?port=" + this.selectPort, this.selectItem).then(res => {
         console.info(res.data);
+        this.info = "";
+
+
+
       })
+    },
+    websocketonmessage(e) {
+      console.log(e.data);
+      // this.info += e.data + "<br />";
+
+      this.outputInfo += e.data + "\n";
+
+      const outputInfo = document.getElementById('outputInfo');
+      outputInfo.scrollTop = outputInfo.scrollHeight;
+      // const options = {
+      //   duration: 300,
+      //   offset: 0,
+      //   easing: Object.keys(easings),
+      // };
+      // this.$vuetify.goTo(100, options);
     },
     addBtn() {
       if (this.file == null) {
