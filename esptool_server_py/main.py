@@ -11,6 +11,8 @@ import platform
 import pathlib
 import serial.tools.list_ports
 from subprocess import Popen, PIPE, STDOUT
+import yaml
+
 
 app = FastAPI()
 origins = [
@@ -27,6 +29,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 models.Base.metadata.create_all(bind=engine)
+
+
+def application_config():
+    with open('application.yml') as f:
+        data = yaml.load(f, Loader=yaml.FullLoader)
+        return data
+
+
+flash_port = application_config()['websocket']['port']['flash']
+monitor_port = application_config()['websocket']['port']['monitor']
 
 
 def get_db():
@@ -86,6 +98,7 @@ def exe_command(command):
     return process, exitcode
 
 
+# https://github.com/espressif/esp-idf/issues/4008
 @app.post("/firmware/flash/")
 def firmware_flash(firmware: schema.Firmware, port: str):
     base_path = str(pathlib.Path(__file__).parent.resolve())
@@ -109,6 +122,26 @@ def firmware_flash(firmware: schema.Firmware, port: str):
     return "ok"
 
 
+@app.post("/monitor/")
+def monitor(baud: str, port: str):
+    base_path = str(pathlib.Path(__file__).parent.resolve())
+    #结束监视器的websocketd
+    os.popen("ps -ef |grep 'websocketd --port=8085' | awk '{print $2}' | xargs kill -9")
+
+
+
+    websocketd_cmd = "nohup {path}/tools/websocketd{platform} --port=8085 {cmd} &".format(path=base_path,
+                                                                 platform='.exe' if platform.system().lower() == 'windows' else '',
+                                                                 cmd='')
+    print(websocketd_cmd)
+    # print(esptool_cmd)
+
+    # exe_command(esptool_cmd)
+
+    subprocess.call(websocketd_cmd, shell=True)
+    return "ok"
+
+
 @app.post("/upload/file")
 async def upload_file(file: UploadFile, alias: str = Form()):
     print(alias)
@@ -121,11 +154,6 @@ async def upload_file(file: UploadFile, alias: str = Form()):
     finally:
         file.file.close()
     return {"message": f"Successfully uploaded {alias}"}
-
-
-@app.get("/")
-def hello():
-    return "hello"
 
 
 @app.get('/port_list')

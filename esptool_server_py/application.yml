@@ -1,0 +1,4 @@
+websocket:
+    port:
+        flash: 8083
+        monitor: 8085

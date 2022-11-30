@@ -38,15 +38,15 @@
             <v-list-item-title>常用功能</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
-        <!-- <v-list-item @click="toSerialMonitor" link>
+        <v-list-item @click="toSerialMonitor" link>
           <v-list-item-icon>
             <v-icon>mdi-connection</v-icon>
           </v-list-item-icon>
 
           <v-list-item-content>
-            <v-list-item-title>串口</v-list-item-title>
+            <v-list-item-title>串口监视器</v-list-item-title>
           </v-list-item-content>
-        </v-list-item> -->
+        </v-list-item>
       </v-list>
     </v-navigation-drawer>
 

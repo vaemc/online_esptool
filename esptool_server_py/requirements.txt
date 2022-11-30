@@ -1,9 +1,10 @@
-fastapi==0.87.0
+fastapi~=0.87.0
 Flask==2.2.2
-flask_cors==3.0.10
+Flask_Cors==3.0.10
 flask_sqlalchemy==3.0.2
 pydantic==1.10.2
 pyserial==3.5
 SQLAlchemy==1.4.44
 websockets==10.4
 Werkzeug==2.2.2
+PyYAML~=6.0
