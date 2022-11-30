@@ -1,0 +1,27 @@
+{
+  "name": "esptool_server_web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build"
+  },
+  "dependencies": {
+    "axios": "^1.2.0",
+    "core-js": "^3.8.3",
+    "vue": "^2.6.14",
+    "vue-axios": "^3.5.2",
+    "vue-router": "^3.5.1",
+    "vuex": "^3.6.2",
+    "moment": "^2.29.4",
+    "vuetify": "^2.6.12",
+    "@mdi/font": "^7.0.96"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "~5.0.0",
+    "@vue/cli-plugin-router": "~5.0.0",
+    "@vue/cli-plugin-vuex": "~5.0.0",
+    "@vue/cli-service": "~5.0.0",
+    "vue-template-compiler": "^2.6.14"
+  }
+}

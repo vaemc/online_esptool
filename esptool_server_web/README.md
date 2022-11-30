@@ -1,4 +1,4 @@
-# esptool_server_vue
+# esptool_server_web
 
 ## Project setup
 ```
