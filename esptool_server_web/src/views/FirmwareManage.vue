@@ -250,7 +250,6 @@ export default {
       outputInfo.scrollTop = outputInfo.scrollHeight;
       let matchResult = balanced('... (', ' %)', e.data)
       if (matchResult != undefined) {
-        console.info(matchResult.body);
         this.flashProgressEnable = true;
         this.flashProgress = parseInt(matchResult.body);
       }
