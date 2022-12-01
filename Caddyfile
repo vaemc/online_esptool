@@ -1,0 +1,4 @@
+localhost:80
+root ./esptool_server_web/dist/
+file_server browse
+try_files {path}  /index.html
