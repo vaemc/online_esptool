@@ -103,7 +103,7 @@ def exe_command(command):
 def firmware_flash(firmware: schema.Firmware, port: str):
     base_path = str(pathlib.Path(__file__).parent.resolve())
     #结束烧录的websocketd
-    os.popen("ps -ef |grep 'websocketd --port=8083' | awk '{print $2}' | xargs kill -9")
+    print(os.popen("ps -ef |grep 'websocketd --port=8083' | awk '{print $2}' | xargs kill -9").read())
 
     esptool_cmd = "{path}/tools/esptool{platform} {cmd}".format(path=base_path,
                                                                   platform='.exe' if platform.system().lower() == 'windows' else '',

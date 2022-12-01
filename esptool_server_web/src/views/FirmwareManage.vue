@@ -80,6 +80,8 @@
             <v-spacer></v-spacer>
 
           </v-toolbar>
+          <v-progress-linear v-if="flashProgressEnable" height="10" v-model="flashProgress" value="10"
+            striped></v-progress-linear>
           <v-list three-line subheader>
             <v-subheader>{{ selectItem.filename }}</v-subheader>
             <v-list-item>
@@ -107,11 +109,10 @@
           <div style="margin: 5px">
             <v-select filled @click="portListRefresh" @change="portChange" :items="portList" label="端口"></v-select>
 
-            <v-btn block @click="flashBtn" depressed color="primary">烧录</v-btn>
-            <v-btn block @click="aaaaa" depressed color="primary">esptool</v-btn>
+            <v-btn block @click="flashBtn" :loading="flashing" :disabled="flashing" depressed color="primary">烧录
+            </v-btn>
             <div style="margin-top: 10px" v-html="info"></div>
-            <v-textarea id="outputInfo" outlined rows="10" 
-              v-model="outputInfo"></v-textarea>
+            <v-textarea id="outputInfo" outlined rows="10" v-model="outputInfo"></v-textarea>
           </div>
         </v-card>
       </v-dialog>
@@ -120,6 +121,7 @@
 </template>
 <script>
 import moment from "moment";
+import balanced from "balanced-match"
 
 function uuidv4() {
   return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
@@ -132,6 +134,9 @@ function uuidv4() {
 
 export default {
   data: () => ({
+    flashProgress: 0,
+    flashProgressEnable: false,
+    flashing: false,
     outputInfo: "",
     defaultCmd: "esptool.exe write_flash 0x0 ${BIN}",
     selectPort: "",
@@ -162,7 +167,7 @@ export default {
       },
       { text: "板子类型", value: "board" },
       { text: "描述", sortable: false, value: "description" },
-      { text: "烧入命令", sortable: false, value: "cmd", width: 500 },
+      { text: "烧入命令", sortable: false, value: "cmd" },
       { text: "添加时间", value: "time" },
       { text: "操作", value: "actions", sortable: false },
     ],
@@ -212,14 +217,6 @@ export default {
     portChange(item) {
       this.selectPort = item;
     },
-    aaaaa() {
-      const wsuri = "ws://localhost:8083";
-      this.websock = new WebSocket(wsuri);
-      this.websock.onmessage = this.websocketonmessage;
-
-
-
-    },
     flashBtn() {
       if (this.selectPort == "") {
         this.snackbar = true;
@@ -229,25 +226,40 @@ export default {
       this.axios.post("firmware/flash?port=" + this.selectPort, this.selectItem).then(res => {
         console.info(res.data);
         this.info = "";
-
+        this.outputInfo = "";
+        this.initWebSocket();
+        this.flashing = true;
 
 
       })
     },
+    initWebSocket() {
+      const wsuri = "ws://localhost:8083";
+      this.websock = new WebSocket(wsuri);
+      this.websock.onmessage = this.websocketonmessage;
+      this.websock.onerror = this.websocketonerror;
+      this.websock.onclose = this.websocketclose;
+    },
+    websocketonerror() {
+      this.initWebSocket();
+    },
     websocketonmessage(e) {
-      console.log(e.data);
-      // this.info += e.data + "<br />";
-
+      console.info(e.data);
       this.outputInfo += e.data + "\n";
-
       const outputInfo = document.getElementById('outputInfo');
       outputInfo.scrollTop = outputInfo.scrollHeight;
-      // const options = {
-      //   duration: 300,
-      //   offset: 0,
-      //   easing: Object.keys(easings),
-      // };
-      // this.$vuetify.goTo(100, options);
+      let matchResult = balanced('... (', ' %)', e.data)
+      if (matchResult != undefined) {
+        console.info(matchResult.body);
+        this.flashProgressEnable = true;
+        this.flashProgress = parseInt(matchResult.body);
+      }
+    },
+    websocketclose(e) {
+      console.log('close');
+      this.flashing = false;
+      this.flashProgressEnable = false;
+      this.flashProgress = 0;
     },
     addBtn() {
       if (this.file == null) {
