@@ -13,7 +13,6 @@ from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 from subprocess import Popen, PIPE, STDOUT
 
-
 app = FastAPI()
 origins = [
     "http://localhost:8080",
@@ -102,8 +101,6 @@ def exe_command(command):
 # https://github.com/espressif/esp-idf/issues/4008
 @app.post("/firmware/flash/")
 def firmware_flash(firmware: schema.Firmware, port: str):
-    # base_path = str(pathlib.Path(__file__).parent.resolve())
-    # 结束websocketd
     print(os.popen("ps -ef |grep 'websocketd --port=%s' | awk '{print $2}' | xargs kill -9" % flash_ws_port).read())
     esptool_cmd = "{path}/tools/esptool{platform} {cmd}".format(path=base_path,
                                                                 platform='.exe' if platform.system().lower() == 'windows' else '',
@@ -118,21 +115,15 @@ def firmware_flash(firmware: schema.Firmware, port: str):
     return "ok"
 
 
-@app.post("/monitor/")
-def monitor(baud: str, port: str):
-    # base_path = str(pathlib.Path(__file__).parent.resolve())
-    # 结束监视器的websocketd
+@app.get("/monitor/")
+def monitor(port: str, baud: str):
     os.popen("ps -ef |grep 'websocketd --port=%s' | awk '{print $2}' | xargs kill -9" % monitor_ws_port)
-
+    monitor_cmd = "python3 {path}/tools/monitor.py -p {port} -b {baud}".format(path=base_path, port=port, baud=baud)
     websocketd_cmd = "nohup {path}/tools/websocketd{platform} --port={monitor_ws_port} {cmd} &".format(path=base_path,
                                                                                                        platform='.exe' if platform.system().lower() == 'windows' else '',
                                                                                                        monitor_ws_port=monitor_ws_port,
-                                                                                                       cmd='')
+                                                                                                       cmd=monitor_cmd)
     print(websocketd_cmd)
-    # print(esptool_cmd)
-
-    # exe_command(esptool_cmd)
-
     subprocess.call(websocketd_cmd, shell=True)
     return "ok"
 
@@ -168,3 +159,5 @@ def port_list():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
