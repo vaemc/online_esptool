@@ -1,17 +1,17 @@
 import subprocess
-
-from fastapi import Depends, FastAPI, HTTPException, File, Form, UploadFile, requests
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+import uvicorn
 import models
 import schema
 import os
-from database import SessionLocal, engine
 import platform
 import pathlib
 import serial.tools.list_ports
-from subprocess import Popen, PIPE, STDOUT
 import yaml
+from fastapi import Depends, FastAPI, HTTPException, File, Form, UploadFile, requests
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from database import SessionLocal, engine
+from subprocess import Popen, PIPE, STDOUT
 
 
 app = FastAPI()
@@ -37,8 +37,9 @@ def application_config():
         return data
 
 
-flash_port = application_config()['websocket']['port']['flash']
-monitor_port = application_config()['websocket']['port']['monitor']
+flash_ws_port = application_config()['websocket']['port']['flash']
+monitor_ws_port = application_config()['websocket']['port']['monitor']
+base_path = str(pathlib.Path(__file__).parent.resolve())
 
 
 def get_db():
@@ -101,38 +102,32 @@ def exe_command(command):
 # https://github.com/espressif/esp-idf/issues/4008
 @app.post("/firmware/flash/")
 def firmware_flash(firmware: schema.Firmware, port: str):
-    base_path = str(pathlib.Path(__file__).parent.resolve())
-    #结束烧录的websocketd
-    print(os.popen("ps -ef |grep 'websocketd --port=8083' | awk '{print $2}' | xargs kill -9").read())
-
+    # base_path = str(pathlib.Path(__file__).parent.resolve())
+    # 结束websocketd
+    print(os.popen("ps -ef |grep 'websocketd --port=%s' | awk '{print $2}' | xargs kill -9" % flash_ws_port).read())
     esptool_cmd = "{path}/tools/esptool{platform} {cmd}".format(path=base_path,
-                                                                  platform='.exe' if platform.system().lower() == 'windows' else '',
-                                                                  cmd=firmware.cmd).replace("${PORT}", port).replace(
+                                                                platform='.exe' if platform.system().lower() == 'windows' else '',
+                                                                cmd=firmware.cmd).replace("${PORT}", port).replace(
         "${BIN}", base_path + firmware_path + firmware.alias)
-
-    websocketd_cmd = "nohup {path}/tools/websocketd{platform} --port=8083 {cmd} &".format(path=base_path,
-                                                                 platform='.exe' if platform.system().lower() == 'windows' else '',
-                                                                 cmd=esptool_cmd)
+    websocketd_cmd = "nohup {path}/tools/websocketd{platform} --port={flash_ws_port} {cmd} &".format(path=base_path,
+                                                                                                     platform='.exe' if platform.system().lower() == 'windows' else '',
+                                                                                                     flash_ws_port=flash_ws_port,
+                                                                                                     cmd=esptool_cmd)
     print(websocketd_cmd)
-    # print(esptool_cmd)
-
-    # exe_command(esptool_cmd)
-
     subprocess.call(websocketd_cmd, shell=True)
     return "ok"
 
 
 @app.post("/monitor/")
 def monitor(baud: str, port: str):
-    base_path = str(pathlib.Path(__file__).parent.resolve())
-    #结束监视器的websocketd
-    os.popen("ps -ef |grep 'websocketd --port=8085' | awk '{print $2}' | xargs kill -9")
+    # base_path = str(pathlib.Path(__file__).parent.resolve())
+    # 结束监视器的websocketd
+    os.popen("ps -ef |grep 'websocketd --port=%s' | awk '{print $2}' | xargs kill -9" % monitor_ws_port)
 
-
-
-    websocketd_cmd = "nohup {path}/tools/websocketd{platform} --port=8085 {cmd} &".format(path=base_path,
-                                                                 platform='.exe' if platform.system().lower() == 'windows' else '',
-                                                                 cmd='')
+    websocketd_cmd = "nohup {path}/tools/websocketd{platform} --port={monitor_ws_port} {cmd} &".format(path=base_path,
+                                                                                                       platform='.exe' if platform.system().lower() == 'windows' else '',
+                                                                                                       monitor_ws_port=monitor_ws_port,
+                                                                                                       cmd='')
     print(websocketd_cmd)
     # print(esptool_cmd)
 
@@ -144,16 +139,17 @@ def monitor(baud: str, port: str):
 
 @app.post("/upload/file")
 async def upload_file(file: UploadFile, alias: str = Form()):
-    print(alias)
     try:
         contents = file.file.read()
-        with open(firmware_path + alias, 'wb') as f:
+        with open(base_path + firmware_path + alias, 'wb') as f:
             f.write(contents)
     except Exception:
-        return {"message": "There was an error uploading the file"}
+        print("There was an error uploading the file")
+        return {"error"}
     finally:
         file.file.close()
-    return {"message": f"Successfully uploaded {alias}"}
+    print(f"Successfully uploaded {alias}")
+    return {"ok"}
 
 
 @app.get('/port_list')
@@ -168,3 +164,7 @@ def port_list():
         except (OSError, serial.SerialException):
             pass
     return serial_ports
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

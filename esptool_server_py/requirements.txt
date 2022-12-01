@@ -8,3 +8,4 @@ SQLAlchemy==1.4.44
 websockets==10.4
 Werkzeug==2.2.2
 PyYAML~=6.0
+uvicorn~=0.19.0

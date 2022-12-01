@@ -111,8 +111,7 @@
 
             <v-btn block @click="flashBtn" :loading="flashing" :disabled="flashing" depressed color="primary">烧录
             </v-btn>
-            <div style="margin-top: 10px" v-html="info"></div>
-            <v-textarea id="outputInfo" outlined rows="10" v-model="outputInfo"></v-textarea>
+            <v-textarea style="margin-top: 15px;" id="outputInfo" outlined rows="7" v-model="outputInfo"></v-textarea>
           </div>
         </v-card>
       </v-dialog>
@@ -122,7 +121,7 @@
 <script>
 import moment from "moment";
 import balanced from "balanced-match"
-
+import { server } from '../config'
 function uuidv4() {
   return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
     (
@@ -140,7 +139,6 @@ export default {
     outputInfo: "",
     defaultCmd: "esptool.exe write_flash 0x0 ${BIN}",
     selectPort: "",
-    info: "",
     portList: [],
     selectItem: "",
     flashDialog: false,
@@ -234,7 +232,7 @@ export default {
       })
     },
     initWebSocket() {
-      const wsuri = "ws://localhost:8083";
+      const wsuri = `ws://${server.ip}:8083`;
       this.websock = new WebSocket(wsuri);
       this.websock.onmessage = this.websocketonmessage;
       this.websock.onerror = this.websocketonerror;
