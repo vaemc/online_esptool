@@ -12,32 +12,27 @@
         </v-btn>
       </template>
     </v-snackbar>
-
-    <v-file-input filled v-model="file" label="选择固件"></v-file-input>
-    <!-- <v-select :items="boardList" v-model="firmware.board" label="板子类型" filled></v-select> -->
-    <v-select filled :items="boardList" v-model="firmware.board" label="板子类型"></v-select>
-
-    <v-text-field v-model="firmware.description" label="描述" filled></v-text-field>
-
-    <v-textarea filled label="烧录命令" v-model="firmware.cmd"
-      hint="注意：请将命令中的端口换成  ${PORT}  Bin文件路径换成  ${BIN}  ，并省略esptool.exe前缀">
-
-      <template v-slot:append-outer>
-        <div>
-          <v-btn text @click="firmware.cmd += 'write_flash 0x0 ${BIN}'" color="primary">
-            默认命令
+    <FirmwareUpload ref="firmwareUpload" />
+    <v-btn block @click="addFirmwareBtn" depressed color="primary">添加</v-btn>
+    <v-dialog v-model="firmwareUpdateDialog" max-width="800px">
+      <v-card>
+        <v-card-title>
+          <span class="text-h5">修改 {{ firmwareUpdateDialogTitle }}</span>
+        </v-card-title>
+        <v-container>
+          <FirmwareUpload ref="firmwareUpload" />
+        </v-container>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="primary" text @click="firmwareUpdateDialogClose">
+            取消
           </v-btn>
-          <v-btn text @click="firmware.cmd += '${PORT}'" color="primary">
-            ${PORT}
+          <v-btn color="primary" text @click="firmwareUpdateDialogSave">
+            保存
           </v-btn>
-          <v-btn text @click="firmware.cmd += '${BIN}'" color="primary">
-            ${BIN}
-          </v-btn>
-        </div>
-      </template>
-    </v-textarea>
-    <v-btn block @click="addBtn" depressed color="primary">添加</v-btn>
-
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-data-table style="margin-top: 10px" :headers="headers" :items="firmwareList" sort-by="calories"
       class="elevation-1">
       <template v-slot:top>
@@ -48,7 +43,7 @@
 
           <v-dialog v-model="dialogDelete" max-width="500px">
             <v-card>
-              <v-card-title class="text-h5">确定删除&nbsp<span style="color:red">{{ editedItem.filename }}</span>&nbsp吗
+              <v-card-title class="text-h5">确定删除&nbsp<span style="color:red">{{ selectedItem.filename }}</span>&nbsp吗
               </v-card-title>
               <v-card-actions>
                 <v-spacer></v-spacer>
@@ -62,7 +57,8 @@
       </template>
       <template v-slot:item.actions="{ item }">
         <v-icon small class="mr-2" @click="flashItem(item)"> mdi-flash </v-icon>
-        <v-icon small @click="deleteItem(item)"> mdi-delete </v-icon>
+        <v-icon small class="mr-2" @click="editItem(item)"> mdi-pencil </v-icon>
+        <v-icon small class="mr-2" @click="deleteItem(item)"> mdi-delete </v-icon>
       </template>
       <!-- <template v-slot:no-data>
         <v-btn color="primary" @click="initialize"> Reset </v-btn>
@@ -122,16 +118,12 @@
 import moment from "moment";
 import balanced from "balanced-match"
 import { server } from '../config'
-function uuidv4() {
-  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
-    (
-      c ^
-      (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
-    ).toString(16)
-  );
-}
+import FirmwareUpload from '../components/FirmwareUpload.vue'
 
 export default {
+  components: {
+    FirmwareUpload
+  },
   data: () => ({
     flashProgress: 0,
     flashProgressEnable: false,
@@ -154,7 +146,8 @@ export default {
       description: "",
       time: "",
     },
-    dialog: false,
+    firmwareUpdateDialogTitle: "",
+    firmwareUpdateDialog: false,
     dialogDelete: false,
     headers: [
       {
@@ -171,14 +164,8 @@ export default {
     ],
     desserts: [],
     firmwareList: [],
-    editedIndex: -1,
-    editedItem: {
-      name: "",
-      calories: 0,
-      fat: 0,
-      carbs: 0,
-      protein: 0,
-    },
+    selectedIndex: -1,
+    selectedItem: {},
     defaultItem: {
       name: "",
       calories: 0,
@@ -258,45 +245,48 @@ export default {
       this.flashProgressEnable = false;
       this.flashProgress = 0;
     },
-    addBtn() {
-      if (this.file == null) {
+    addFirmwareBtn() {
+
+
+      console.info(this.$refs.firmwareUpload.firmware);
+      let firmware = this.$refs.firmwareUpload.firmware;
+
+      if (firmware.file == null) {
         this.snackbar = true;
         this.snackbarText = "请选择文件";
         return;
       }
-      if (this.firmware.board == "") {
+      if (firmware.info.board == "") {
         this.snackbar = true;
         this.snackbarText = "请选择板子类型";
         return;
       }
-      if (this.firmware.description == "") {
+      if (firmware.info.description == "") {
         this.snackbar = true;
         this.snackbarText = "请输入描述";
         return;
       }
-      if (this.firmware.cmd == "") {
+      if (firmware.info.cmd == "") {
         this.snackbar = true;
         this.snackbarText = "请输入烧入命令";
         return;
       }
+      firmware.info.alias = firmware.info.alias + "." + firmware.file.name.split(".").pop();
 
-      let uuid = uuidv4() + "." + this.file.name.split(".").pop();
+
       let formData = new FormData();
-      formData.append("file", this.file);
-      formData.append("alias", uuid);
-      //console.info(this.file.name);
-      this.firmware.alias = uuid;
-      this.firmware.filename = this.file.name;
-      this.firmware.time = moment().format("YYYY-MM-DD HH:mm:ss");
+      formData.append("file", firmware.file);
+      formData.append("alias", firmware.info.alias);
+      firmware.info.filename = firmware.file.name;
+
       this.axios.post("/upload/file", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-      this.axios.post("firmware/save", this.firmware).then((res) => {
+      this.axios.post("firmware/save", firmware.info).then((res) => {
         this.snackbar = true;
         this.snackbarText = "添加成功";
-
         this.firmwareList.push(res.data);
       });
 
@@ -308,9 +298,11 @@ export default {
       });
     },
     editItem(item) {
-      this.editedIndex = this.firmwareList.indexOf(item);
-      this.editedItem = Object.assign({}, item);
-      this.dialog = true;
+      
+      this.selectedIndex = this.firmwareList.indexOf(item);
+      this.selectedItem = item;
+      this.firmwareUpdateDialog = true;
+      this.firmwareUpdateDialogTitle = item.filename;
     },
     flashItem(item) {
       this.flashDialog = true;
@@ -320,43 +312,36 @@ export default {
 
     },
     deleteItem(item) {
-      this.editedIndex = this.firmwareList.indexOf(item);
-      this.editedItem = Object.assign({}, item);
+      this.selectedIndex = this.firmwareList.indexOf(item);
+      this.selectedItem = item;
       this.dialogDelete = true;
     },
 
     deleteItemConfirm() {
-      this.firmwareList.splice(this.editedIndex, 1);
+      this.firmwareList.splice(this.selectedIndex, 1);
       this.closeDelete();
-      this.axios.delete("firmware/delete/" + this.editedItem.id).then(res => {
+      this.axios.delete("firmware/delete/" + this.selectedItem.id).then(res => {
         this.snackbar = true;
         this.snackbarText = "删除成功";
       })
     },
 
-    close() {
-      this.dialog = false;
-      this.$nextTick(() => {
-        this.editedItem = Object.assign({}, this.defaultItem);
-        this.editedIndex = -1;
-      });
+    firmwareUpdateDialogClose() {
+      this.firmwareUpdateDialog = false;
+
     },
 
     closeDelete() {
       this.dialogDelete = false;
       this.$nextTick(() => {
-        this.editedItem = Object.assign({}, this.defaultItem);
-        this.editedIndex = -1;
+        this.selectedItem = Object.assign({}, this.defaultItem);
+        this.selectedIndex = -1;
       });
     },
 
-    save() {
-      if (this.editedIndex > -1) {
-        Object.assign(this.firmwareList[this.editedIndex], this.editedItem);
-      } else {
-        this.firmwareList.push(this.editedItem);
-      }
-      this.close();
+    firmwareUpdateDialogSave() {
+
+      this.firmwareUpdateDialogClose();
     },
   },
 };

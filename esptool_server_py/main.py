@@ -71,11 +71,17 @@ def firmware_save(firmware: schema.Firmware, db: Session = Depends(get_db)):
 
 
 @app.delete("/firmware/delete/{id}")
-def firmware_query(id: int, db: Session = Depends(get_db)):
+def firmware_delete(id: int, db: Session = Depends(get_db)):
     firmware = db.query(models.Firmware).filter(models.Firmware.id == id).first()
     db.delete(firmware)
     db.commit()
-    os.remove("./upload_file/" + firmware.alias)
+    file_delete(firmware.alias)
+    return "ok"
+
+
+@app.delete("/file/delete/{name}")
+def file_delete(name: str):
+    os.remove("./upload_file/" + name)
     return "ok"
 
 
@@ -159,5 +165,3 @@ def port_list():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-

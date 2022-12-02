@@ -1,20 +1,20 @@
 <template>
   <div>
-    <v-select
-      @click="portListRefresh"
-      :items="portList"
-      label="端口"
-    ></v-select>
+    <v-select @click="portListRefresh" :items="portList" label="端口"></v-select>
     <v-select :items="baudRateList" label="波特率"></v-select>
     <v-btn block @click="ok" depressed color="primary">打开</v-btn>
 
     <div style="margin-top: 10px" v-html="info"></div>
+
+  
   </div>
 </template>
 
 <script>
 import * as easings from "vuetify/lib/services/goto/easing-patterns";
+import FirmwareUpload from '../components/FirmwareUpload.vue'
 export default {
+ 
   data() {
     return {
       portList: [],
@@ -48,6 +48,7 @@ export default {
     });
   },
   methods: {
+   
     portListRefresh() {
       this.axios.get("port_list").then((res) => {
         this.portList = res.data;
