@@ -20,7 +20,7 @@
           <span class="text-h5">修改 {{ firmwareUpdateDialogTitle }}</span>
         </v-card-title>
         <v-container>
-          <FirmwareUpload ref="firmwareUpload" />
+          <FirmwareUpload ref="firmwareUploadUpdate" />
         </v-container>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -72,32 +72,32 @@
             <v-btn icon dark @click="flashDialog = false">
               <v-icon>mdi-close</v-icon>
             </v-btn>
-            <v-toolbar-title>{{ selectItem.filename }}</v-toolbar-title>
+            <v-toolbar-title>{{ selectedItem.filename }}</v-toolbar-title>
             <v-spacer></v-spacer>
 
           </v-toolbar>
           <v-progress-linear v-if="flashProgressEnable" height="10" v-model="flashProgress" value="10"
             striped></v-progress-linear>
           <v-list three-line subheader>
-            <v-subheader>{{ selectItem.filename }}</v-subheader>
+            <v-subheader>{{ selectedItem.filename }}</v-subheader>
             <v-list-item>
               <v-list-item-content>
                 <v-list-item-title>描述</v-list-item-title>
-                <v-list-item-subtitle>{{ selectItem.description }}
+                <v-list-item-subtitle>{{ selectedItem.description }}
                 </v-list-item-subtitle>
               </v-list-item-content>
             </v-list-item>
             <v-list-item>
               <v-list-item-content>
                 <v-list-item-title>板子类型</v-list-item-title>
-                <v-list-item-subtitle>{{ selectItem.board }}
+                <v-list-item-subtitle>{{ selectedItem.board }}
                 </v-list-item-subtitle>
               </v-list-item-content>
             </v-list-item>
             <v-list-item>
               <v-list-item-content>
                 <v-list-item-title>命令</v-list-item-title>
-                <v-list-item-subtitle>{{ selectItem.cmd }}
+                <v-list-item-subtitle>{{ selectedItem.cmd }}
                 </v-list-item-subtitle>
               </v-list-item-content>
             </v-list-item>
@@ -132,7 +132,6 @@ export default {
     defaultCmd: "esptool.exe write_flash 0x0 ${BIN}",
     selectPort: "",
     portList: [],
-    selectItem: "",
     flashDialog: false,
     boardList: ["ESP8266", "ESP8285", "ESP32", "ESP32-C2", "ESP32-C3", "ESP32-S2", "ESP32-S3"],
     snackbarText: "",
@@ -208,7 +207,7 @@ export default {
         this.snackbarText = "请选择端口";
         return;
       }
-      this.axios.post("firmware/flash?port=" + this.selectPort, this.selectItem).then(res => {
+      this.axios.post("firmware/flash?port=" + this.selectPort, this.selectedItem).then(res => {
         console.info(res.data);
         this.info = "";
         this.outputInfo = "";
@@ -297,16 +296,10 @@ export default {
         this.portList = res.data;
       });
     },
-    editItem(item) {
-      
-      this.selectedIndex = this.firmwareList.indexOf(item);
-      this.selectedItem = item;
-      this.firmwareUpdateDialog = true;
-      this.firmwareUpdateDialogTitle = item.filename;
-    },
+
     flashItem(item) {
       this.flashDialog = true;
-      this.selectItem = item;
+      this.selectedItem = item;
 
 
 
@@ -325,24 +318,30 @@ export default {
         this.snackbarText = "删除成功";
       })
     },
+    editItem(item) {
 
+      this.selectedIndex = this.firmwareList.indexOf(item);
+      this.selectedItem = item;
+      this.firmwareUpdateDialog = true;
+      this.firmwareUpdateDialogTitle = item.filename;
+      this.$refs.firmwareUploadUpdate.cc("aa");
+
+    },
     firmwareUpdateDialogClose() {
       this.firmwareUpdateDialog = false;
 
     },
-
+    firmwareUpdateDialogSave() {
+      this.firmwareUpdateDialogClose();
+    },
     closeDelete() {
       this.dialogDelete = false;
       this.$nextTick(() => {
         this.selectedItem = Object.assign({}, this.defaultItem);
         this.selectedIndex = -1;
       });
-    },
+    }
 
-    firmwareUpdateDialogSave() {
-
-      this.firmwareUpdateDialogClose();
-    },
   },
 };
 </script>
