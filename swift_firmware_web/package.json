@@ -1,5 +1,5 @@
 {
-  "name": "esptool_server_web",
+  "name": "swift_firmware_web",
   "version": "0.1.0",
   "private": true,
   "scripts": {

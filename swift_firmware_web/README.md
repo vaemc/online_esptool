@@ -1,4 +1,4 @@
-# esptool_server_web
+# swift_firmware_web
 
 ## Project setup
 ```
