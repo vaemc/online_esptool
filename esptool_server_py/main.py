@@ -70,6 +70,15 @@ def firmware_save(firmware: schema.Firmware, db: Session = Depends(get_db)):
     return db_firmware
 
 
+@app.post("/firmware/update")
+def firmware_save(firmware: schema.Firmware, db: Session = Depends(get_db)):
+    db_firmware = models.Firmware(id=firmware.id, filename=firmware.filename, alias=firmware.alias, board=firmware.board,
+                                  cmd=firmware.cmd, description=firmware.description, time=firmware.time)
+    db.commit()
+    db.refresh(db_firmware)
+    return db_firmware
+
+
 @app.delete("/firmware/delete/{id}")
 def firmware_delete(id: int, db: Session = Depends(get_db)):
     firmware = db.query(models.Firmware).filter(models.Firmware.id == id).first()

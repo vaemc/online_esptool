@@ -385,7 +385,8 @@ export default {
       this.firmwareDialog = true;
       this.firmwareDialogTitle = "修改固件";
       this.firmwareDialogModel = 1;
-  
+      console.info(item);
+      // this.firmware.
       this.firmware.info = this.selectedItem;
     },
     addFirmwareBtn() {
@@ -399,30 +400,32 @@ export default {
     firmwareDialogSave() {
       // this.firmwareDialog = false;
 
-      if (this.firmwareDialogModel == 0) {
-        console.info(this.firmware);
-        let firmware = this.firmware;
+      console.info(this.firmware);
+      let firmware = this.firmware;
 
+      if (firmware.info.board == "") {
+        this.snackbar = true;
+        this.snackbarText = "请选择板子类型";
+        return;
+      }
+      if (firmware.info.description == "") {
+        this.snackbar = true;
+        this.snackbarText = "请输入描述";
+        return;
+      }
+      if (firmware.info.cmd == "") {
+        this.snackbar = true;
+        this.snackbarText = "请输入烧入命令";
+        return;
+      }
+
+      if (this.firmwareDialogModel == 0) {
         if (firmware.file == null) {
           this.snackbar = true;
           this.snackbarText = "请选择文件";
           return;
         }
-        if (firmware.info.board == "") {
-          this.snackbar = true;
-          this.snackbarText = "请选择板子类型";
-          return;
-        }
-        if (firmware.info.description == "") {
-          this.snackbar = true;
-          this.snackbarText = "请输入描述";
-          return;
-        }
-        if (firmware.info.cmd == "") {
-          this.snackbar = true;
-          this.snackbarText = "请输入烧入命令";
-          return;
-        }
+
         firmware.info.alias =
           firmware.info.alias + "." + firmware.file.name.split(".").pop();
 
@@ -443,8 +446,12 @@ export default {
         });
       }
 
-      if (this.firmwareDialogModel == 0) {
-       
+      if (this.firmwareDialogModel == 1) {
+        this.axios.post("firmware/update", firmware.info).then((res) => {
+          this.snackbar = true;
+          this.snackbarText = "添加成功";
+          this.firmwareList.push(res.data);
+        });
       }
 
       this.firmwareDialog = false;

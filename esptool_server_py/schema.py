@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 
 class Firmware(BaseModel):
+    id: int
     filename: str
     alias: str
     board: str
