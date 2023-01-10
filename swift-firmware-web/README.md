@@ -1,4 +1,4 @@
-# swift_firmware_web
+# SwiftFirmwareWeb
 
 ## Project setup
 ```
